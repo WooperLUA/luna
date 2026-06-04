@@ -1,0 +1,30 @@
+[
+  {
+    "pattern": "\\/\\/.*|\\/\\*[\\s\\S]*?\\*\\/",
+    "color": "\u001b[38;5;244m"
+  },
+  {
+    "pattern": "\"(?:\\\\.|[^\"\\\\])*\"|'(?:\\\\.|[^'\\\\])*'|`(?:\\\\.|[^`\\\\])*`",
+    "color": "\u001b[38;5;222m"
+  },
+  {
+    "pattern": "\\b(?:const|let|var|class|interface|export|import|from|private|public|protected|async|await|return|if|else|for|while|new|this|extends|implements|static|type|namespace|declare|module|enum|abstract|readonly|as|is|keyof|infer|typeof|in|of|yield|debugger|continue|break|case|default|try|finally|throw|switch|catch|void|delete|function|get|set)\\b",
+    "color": "\u001b[38;5;141m"
+  },
+  {
+    "pattern": "\\b(?:string|number|boolean|void|any|unknown|never|Buffer|Record|Map|Set|Array|Object|Promise|Error|Date|RegExp|Symbol|BigInt|Uint8Array|Int32Array|Float64Array|console|process|Math|JSON)\\b",
+    "color": "\u001b[38;5;203m"
+  },
+  {
+    "pattern": "\\b[a-zA-Z_$][a-zA-Z0-9_$]*(?=\\s*\\()",
+    "color": "\u001b[38;5;86m"
+  },
+  {
+    "pattern": "(?<=\\bfunction\\s+)[a-zA-Z_$][a-zA-Z0-9_$]*",
+    "color": "\u001b[38;5;86m"
+  },
+  {
+    "pattern": "\\b(?:0[xX][0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+|\\d+(?:\\.\\d+)?(?:[eE][+-]?\\d+)?)\\b",
+    "color": "\u001b[38;5;210m"
+  }
+]
