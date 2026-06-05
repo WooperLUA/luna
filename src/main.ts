@@ -1,3 +1,4 @@
+#!/usr/bin/env bun
 import { LunaEditor } from "./editor";
 
 const editor = new LunaEditor();
