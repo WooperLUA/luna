@@ -79,6 +79,12 @@ export class LunaEditor
 
     private isSuspended = false;
 
+    private autocompleteKeywords: Map<string, string[]> = new Map();
+    private isAutocompleting = false;
+    private autocompleteSuggestions: string[] = [];
+    private lastAutocompleteBaseWord = "";
+    private autocompleteStartX = 0;
+
     private commands = new Map<string, {
         desc: string;
         usage: string,
@@ -91,6 +97,7 @@ export class LunaEditor
         this.setupTerminal();
         this.loadDefaultTheme();
         this.loadScripts();
+        this.loadKeywords();
         this.refresh();
     }
 
@@ -197,6 +204,37 @@ export class LunaEditor
             {
             }
         }
+    }
+
+    private async loadKeywords()
+    {
+        const keywordsDir = join(this.getExtensionsDir(), "languages", "keywords");
+        try
+        {
+            const files = readdirSync(keywordsDir);
+            for (const file of files)
+            {
+                if (file.endsWith(".json"))
+                {
+                    const ext = file.slice(0, -5);
+                    const filePath = join(keywordsDir, file);
+                    const fileData = Bun.file(filePath);
+                    if (await fileData.exists())
+                    {
+                        try
+                        {
+                            const content = await fileData.json();
+                            if (Array.isArray(content))
+                            {
+                                this.autocompleteKeywords.set(ext, content as string[]);
+                            }
+                        }
+                        catch {}
+                    }
+                }
+            }
+        }
+        catch {}
     }
 
     private async loadDefaultTheme()
@@ -434,15 +472,19 @@ export class LunaEditor
             action: async () =>
                     {
                         await this.loadDefaultTheme();
+
                         this.scripts.clear();
                         await this.loadScripts();
+
+                        this.autocompleteKeywords.clear();
+                        await this.loadKeywords();
 
                         if (this.filename)
                         {
                             const ext = this.filename.split(".").pop();
                             if (ext)
                             {
-                                const langPath = join(this.getExtensionsDir(), "languages", `${ext}.json`);
+                                const langPath = join(this.getExtensionsDir(), "languages", "syntax", `${ext}.json`);
                                 const langFile = Bun.file(langPath);
                                 if (await langFile.exists())
                                 {
@@ -614,7 +656,23 @@ export class LunaEditor
         }
         else
         {
-            Renderer.render(this.lines, this.cx, this.cy, this.rowOffset, this.colOffset, this.mode, this.filename, this.commandBuffer, this.getSelectionRange(), commandUsage);
+            Renderer.render(
+                this.lines,
+                this.cx,
+                this.cy,
+                this.rowOffset,
+                this.colOffset,
+                this.mode,
+                this.filename,
+                this.commandBuffer,
+                this.getSelectionRange(),
+                commandUsage,
+                this.isAutocompleting ? {
+                    suggestions: this.autocompleteSuggestions,
+                    x: this.autocompleteStartX - this.colOffset,
+                    y: this.cy - this.rowOffset
+                } : undefined
+            );
         }
     }
 
@@ -646,7 +704,7 @@ export class LunaEditor
             const ext = path.split(".").pop();
             if (ext)
             {
-                const langPath = join(this.getExtensionsDir(), "languages", `${ext}.json`);
+                const langPath = join(this.getExtensionsDir(), "languages/syntax", `${ext}.json`);
                 const langFile = Bun.file(langPath);
                 if (await langFile.exists())
                 {
@@ -918,6 +976,12 @@ export class LunaEditor
 
         if (data.length === 1 && key === KEY.ESC)
         {
+            if (this.isAutocompleting)
+            {
+                this.isAutocompleting = false;
+                this.refresh();
+                return;
+            }
             this.mode = this.mode === "insert" ? "command" : "insert";
             this.commandBuffer = "";
             this.anchorX = null;
@@ -1108,10 +1172,15 @@ export class LunaEditor
         }
         else if (data[0] === KEY.TAB)
         {
+            this.handleAutocomplete();
+            if (this.isAutocompleting) return;
+
             this.saveState();
             const tabSpaces = "    ";
             this.lines[this.cy] = this.lines[this.cy].slice(0, this.cx) + tabSpaces + this.lines[this.cy].slice(this.cx);
             this.cx += tabSpaces.length;
+            this.snapViewport();
+            this.refresh();
         }
         else if (data[0] === KEY.DEL || data[0] === KEY.BS)
         {
@@ -1178,6 +1247,83 @@ export class LunaEditor
                 this.cx += str.length;
             }
         }
+        this.snapViewport();
+        this.refresh();
+    }
+
+    private handleAutocomplete()
+    {
+        const currentLine = this.lines[this.cy];
+        const textBeforeCursor = currentLine.slice(0, this.cx);
+        const match = textBeforeCursor.match(/([a-zA-Z0-9_#]+)$/);
+
+        if (!match)
+        {
+            this.isAutocompleting = false;
+            return;
+        }
+
+        const baseWord = match[1];
+
+        if (!this.isAutocompleting || this.lastAutocompleteBaseWord !== baseWord)
+        {
+            this.lastAutocompleteBaseWord = baseWord;
+            this.saveState();
+
+            const ext = this.filename.split(".").pop()?.toLowerCase() || "default";
+            const keywords = this.autocompleteKeywords.get(ext) || this.autocompleteKeywords.get("default") || [];
+
+            const fileWords = new Set<string>();
+            for (const line of this.lines)
+            {
+                const words = line.match(/[a-zA-Z0-9_#]+/g);
+                if (words) words.forEach(w => fileWords.add(w));
+            }
+
+            const candidates = Array.from(new Set([...keywords, ...Array.from(fileWords)]));
+            this.autocompleteSuggestions = candidates
+                .filter(w => w.startsWith(baseWord) && w.length > baseWord.length)
+                .sort((a, b) => {
+                    const aIsKey = keywords.includes(a);
+                    const bIsKey = keywords.includes(b);
+                    if (aIsKey && !bIsKey) return -1;
+                    if (!aIsKey && bIsKey) return 1;
+                    return a.localeCompare(b);
+                });
+        }
+        else
+        {
+            this.autocompleteSuggestions.sort((a, b) => {
+                const aIsKey = this.autocompleteKeywords.get(this.filename.split(".").pop()?.toLowerCase() || "default")?.includes(a) ?? false;
+                const bIsKey = this.autocompleteKeywords.get(this.filename.split(".").pop()?.toLowerCase() || "default")?.includes(b) ?? false;
+                if (aIsKey && !bIsKey) return -1;
+                if (!aIsKey && bIsKey) return 1;
+                return a.localeCompare(b);
+            });
+        }
+
+        if (this.autocompleteSuggestions.length > 0)
+        {
+            this.isAutocompleting = true;
+            this.autocompleteStartX = this.cx - baseWord.length;
+            this.applyAutocomplete();
+        }
+        else
+        {
+            this.isAutocompleting = false;
+        }
+    }
+
+    private applyAutocomplete()
+    {
+        if (!this.isAutocompleting || this.autocompleteSuggestions.length === 0) return;
+        const suggestion = this.autocompleteSuggestions[0];
+        const currentLine = this.lines[this.cy];
+        const before = currentLine.slice(0, this.autocompleteStartX);
+        const after = currentLine.slice(this.cx);
+
+        this.lines[this.cy] = before + suggestion + after;
+        this.cx = this.autocompleteStartX + suggestion.length;
         this.snapViewport();
         this.refresh();
     }

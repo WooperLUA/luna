@@ -185,8 +185,9 @@ export class Renderer {
         filename: string,
         commandBuffer: string,
         selection: { sy: number; sx: number; ey: number; ex: number } | null = null,
-        commandUsage: string = ""
-    ) {
+        commandUsage: string = " ",
+        autocomplete?: { suggestions: string[], x: number, y: number }
+    )  {
         const cols = process.stdout.columns || 80;
         const rows = process.stdout.rows || 24;
         let screen = "\x1b[H\x1b[2J";
@@ -234,6 +235,26 @@ export class Renderer {
 
         const statusBarColor = mode === "insert" ? THEME.insertBar : THEME.commandBar;
         screen += `${statusBarColor}${finalBarText}${THEME.reset}`;
+
+        if (autocomplete)
+        {
+            const { suggestions, x, y } = autocomplete;
+            const popupY = y + 1;
+
+            for (let i = 0; i < suggestions.length; i++)
+            {
+
+                if (popupY + i >= rows - 1) break;
+
+                const sug = suggestions[i];
+                const isSelected = i === 0;
+
+                const bg = isSelected ? "\x1b[48;5;141m\x1b[38;5;235m" : "\x1b[48;5;235m\x1b[38;5;146m";
+                const reset = THEME.reset;
+
+                screen += `\x1b[${popupY + i + 1};${x + 1}H${bg} ${sug} ${reset}`;
+            }
+        }
 
         process.stdout.write(screen);
 
