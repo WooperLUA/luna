@@ -1,0 +1,1 @@
+["define", "lambda", "let", "let*", "letrec", "if", "cond", "else", "and", "or", "not", "quote", "quasiquote", "unquote", "begin", "set!", "require", "provide", "struct", "match", "case", "when", "unless", "class", "send", "define/public", "#t", "#f"]

@@ -1,0 +1,34 @@
+[
+  {
+    "pattern": ";.*|#\\\\|[\\s\\S]*?\\\\|#",
+    "color": "\u001b[38;5;244m"
+  },
+  {
+    "pattern": "\"(?:\\\\\\\\.|[^\"\\\\\\\\])*\"",
+    "color": "\u001b[38;5;222m"
+  },
+  {
+    "pattern": "#\\\\[a-zA-Z]+",
+    "color": "\u001b[38;5;213m"
+  },
+  {
+    "pattern": "\\b(?:#t|#f|#true|#false|null|empty)\\b",
+    "color": "\u001b[38;5;210m"
+  },
+  {
+    "pattern": "\\b(?:define|define-syntax|lambda|λ|let|let\\*|letrec|let-values|if|cond|else|and|or|not|quote|quasiquote|unquote|unquote-splicing|begin|set!|require|provide|struct|match|case|when|unless|define-struct|class|interface|send|define/public)\\b",
+    "color": "\u001b[38;5;141m"
+  },
+  {
+    "pattern": "\\b(?:cons|car|cdr|caar|cadr|cdar|cddr|null\\?|pair\\?|list|list\\?|map|filter|foldl|foldr|append|length|reverse|apply|display|println|print|read|eval|make-string|string\\?|string-append|string-length|string-ref|vector|vector\\?|make-vector|vector-ref|vector-set!|hash|hash\\?|make-hash|hash-ref|hash-set!|hash-update)\\b",
+    "color": "\u001b[38;5;183m"
+  },
+  {
+    "pattern": "\\b[a-zA-Z][a-zA-Z0-9!?*+\\-]*(?=\\s*\\()",
+    "color": "\u001b[38;5;86m"
+  },
+  {
+    "pattern": "\\b(?:#x[0-9a-fA-F]+|#b[01]+|#o[0-7]+|\\d+(?:/\\d+)?(?:\\.\\d+)?(?:[eE][+-]?\\d+)?)\\b",
+    "color": "\u001b[38;5;210m"
+  }
+]

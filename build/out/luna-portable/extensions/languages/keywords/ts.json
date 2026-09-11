@@ -1,0 +1,1 @@
+["const", "let", "var", "function", "return", "if", "else", "for", "while", "class", "interface", "type", "import", "export", "async", "await", "try", "catch", "throw", "new", "this", "true", "false", "null", "undefined", "public", "private", "protected", "readonly", "enum"]
